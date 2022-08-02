@@ -78,14 +78,29 @@ class QueryArticle extends connect
   {
     $title = $this->article->getTitle();
     $body = $this->article->getBody();
+    $filename = $this->article->getFilename();
+
     if ($this->article->getId()) {
       // IDが存在する場合は上書き
       $id = $this->article->getId();
+      // 差替えファイルのアップロードが確認できる
+      if ($file = $this->article->getFile()) { //cf.edit.php(l.40)
+        // 既存ファイルの確認,削除
+        if ($this->article->getFilename) {
+          unlink(__DIR__ . '/../album/thumbs-' . $this->article->getFilename());
+          unlink(__DIR__ . '/../album/' . $this->article->getFilename());
+        }
+        // 差替えファイルのアップロード
+        $this->article->setFilename($this->saveFile($file['tmp_name']));
+        $filename = $this->article->getFilename();
+      }
+
       $stmt = $this->dbh->prepare(
-        "UPDATE articles SET title=:title, body=:body, updated_at=NOW() WHERE id=:id"
+        "UPDATE articles SET title=:title, body=:body,filename=:filename, updated_at=NOW() WHERE id=:id"
       );
       $stmt->bindParam(':title', $title, PDO::PARAM_STR);
       $stmt->bindParam(':body', $body, PDO::PARAM_STR);
+      $stmt->bindParam(':filename', $filename, PDO::PARAM_STR);
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
       $stmt->execute();
     } else {

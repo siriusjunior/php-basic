@@ -35,6 +35,10 @@ if (isset($_GET['id'])) {
     // 記事データを上書き保存
     $article->setTitle($title);
     $article->setBody($body);
+    // 画像がアップロードされていたとき
+    if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+      $article->setFile($_FILES['image']);
+    }
     $article->save();
   }
   header('Location:backend.php');
@@ -106,7 +110,7 @@ if (isset($_GET['id'])) {
       <div class="col-md-12">
         <h1>記事の編集</h1>
 
-        <form action="edit.php" method="post">
+        <form action="edit.php" method="post" enctype="multipart/form-data">
           <input type="hidden" name="id" value="<?php echo $id ?>">
           <div class="mb-3">
             <label class="form-label">タイトル</label>
@@ -118,7 +122,20 @@ if (isset($_GET['id'])) {
             <?php echo !empty($body_alert) ? '<div class="alert alert-danger">' . $body_alert . '</div>' : ''; ?>
             <textarea name="body" class="form-control" rows="10"><?php echo $body; ?></textarea>
           </div>
-          <div class="mb-3"><button type="submit" class="btn btn-primary">投稿する</button></div>
+
+          <?php if ($article->getFilename()) : ?>
+            <div class="mb-3">
+              <img src="./album/tumbs-<?php echo $article->getFilename() ?>">
+            </div>
+          <?php endif; ?>
+          <div class="mb-3">
+            <label class="form-label">画像</label>
+            <input type="file" name="image" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <button type="submit" class="btn btn-primary">投稿する</button>
+          </div>
         </form>
       </div>
     </div>
