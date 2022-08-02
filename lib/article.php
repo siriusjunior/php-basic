@@ -19,6 +19,14 @@ class Article
     $queryArticle->save();
   }
 
+  public function delete()
+  {
+    // $articleインスタンスからdeleteする際は再度生成して連動させる(cf.delete.php(l.11))
+    $queryArticle = new QueryArticle();
+    $queryArticle->setArticle($this);
+    $queryArticle->delete();
+  }
+
   public function getId()
   {
     return $this->id;
