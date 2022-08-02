@@ -18,7 +18,13 @@ if (!empty($_POST['title']) && !empty($_POST['body'])) {
   $article = new Article();
   $article->setTitle($title);
   $article->setBody($body);
+
+  // 画像のアップロード処理,$_FILES['image']['tmp_name']はパスとファイル名
+  if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+    $article->setFile($_FILES['image']);
+  }
   $article->save();
+
   header('Location: backend.php');
 } else if (!empty($_POST)) { // POSTメソッドで送信されたがどちらかが欠けている場合
 
@@ -79,7 +85,7 @@ if (!empty($_POST['title']) && !empty($_POST['body'])) {
     <div class="row">
       <div class="col-md-12">
         <h1>記事の投稿</h1>
-        <form action="post.php" method="post">
+        <form action="post.php" method="post" enctype="multipart/form-data">
           <div class="mb-3">
             <label class="form-label">タイトル</label>
             <!-- 三項演算子 -->
@@ -92,7 +98,13 @@ if (!empty($_POST['title']) && !empty($_POST['body'])) {
             <?php echo !empty($body_alert) ? '<div class="alert alert-danger">' . $body_alert . '</div>' : '' ?>
             <textarea name="body" class="form-control" rows="10"><?php echo $body; ?></textarea>
           </div>
-          <div class="mb-3"><button type="submit" class="btn btn-primary">投稿する</button></div>
+          <div class="mb-3">
+            <label class="form-label">画像</label>
+            <input type="file" name="image" class="form-control">
+          </div>
+          <div class="mb-3">
+            <button type="submit" class="btn btn-primary">投稿する</button>
+          </div>
         </form>
       </div>
     </div>
