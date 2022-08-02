@@ -3,6 +3,8 @@ class QueryArticle extends connect
 {
   private $article;
 
+  const THUMBS_WIDTH = 200; //サムネイル幅
+
   public function __construct()
   {
     parent::__construct();
@@ -13,6 +15,63 @@ class QueryArticle extends connect
   {
     // 引数で受けた$articleを自身のパラメーターとして保持($article内のメソッド使用可exl.20,24)
     $this->article = $article;
+  }
+
+  // 画像保存処理と新規ファイル名返却
+  private function saveFile($old_name)
+  {
+    $new_name = date('YmdHis') . mt_rand();
+
+    if ($type = exif_imagetype($old_name)) {
+      // 元画像サイズを取得
+      list($width, $height) = getimagesize($old_name);
+      // サムネイルの比率算出
+      $rate = self::THUMBS_WIDTH / $width;
+      $thumbs_height = $height * $rate;
+      // キャンバス作成
+      $canvas = imagecreatetruecolor(self::THUMBS_WIDTH, $thumbs_height);
+      // 拡張子設定
+      switch ($type) {
+        case IMAGETYPE_JPEG:
+          $new_name .= '.jpg';
+          // サムネイルを保存,パスから画像取得($image)
+          $image = imagecreatefromjpeg($old_name);
+          // canvasと元画像を使用してサムネイル作成
+          imagecopyresampled($canvas, $image, 0, 0, 0, 0, self::THUMBS_WIDTH, $thumbs_height, $width, $height);
+          // サムネ画像リソースを指定パス保存
+          imagejpeg($canvas, __DIR__ . '/../album/thumbs-' . $new_name);
+          break;
+        case IMAGETYPE_GIF:
+          $new_name .= '.gif';
+          // サムネイルを保存,パスから画像取得($image)
+          $image = imagecreatefromgif($old_name);
+          // canvasと元画像を使用してサムネイル作成
+          imagecopyresampled($canvas, $image, 0, 0, 0, 0, self::THUMBS_WIDTH, $thumbs_height, $width, $height);
+          // サムネ画像リソースを指定パス保存
+          imagegif($canvas, __DIR__ . '/../album/thumbs-' . $new_name);
+          break;
+        case IMAGETYPE_PNG:
+          $new_name .= '.png';
+          // サムネイルを保存,パスから画像取得($image)
+          $image = imagecreatefrompng($old_name);
+          // canvasと元画像を使用してサムネイル作成
+          imagecopyresampled($canvas, $image, 0, 0, 0, 0, self::THUMBS_WIDTH, $thumbs_height, $width, $height);
+          // サムネ画像リソースを指定パス保存
+          imagepng($canvas, __DIR__ . '/../album/thumbs-' . $new_name);
+          break;
+        default:
+          // JPEG,GIF,PNG以外の場合は何も返さない
+          imagedestroy($canvas);
+          return null;
+      }
+    } else {
+      // 画像以外の場合
+      return null;
+    }
+    // テンポラリディレクトリ($old_name)からアップロードリソースを指定移動,__DIR__は実行ファイルのディレクトリ出力
+    move_uploaded_file($old_name, __DIR__ . './../album/' . $new_name);
+    // ファイル名を返却
+    return $new_name;
   }
 
   public function save()
@@ -30,34 +89,11 @@ class QueryArticle extends connect
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
       $stmt->execute();
     } else {
-      // article新規作成
-      // ファイル名設定とアップロードファイルの移動
-      if ($file = $this->article->getFile()) {
-        $old_name = $file['tmp_name'];
-        $new_name = date('YmdHis') . mt_rand();
-        // アップロード可否,デフォは不可
-        $is_upload = false;
-        // 拡張子設定
-        $type = exif_imagetype($old_name);
-        switch ($type) {
-          case IMAGETYPE_JPEG:
-            $new_name .= '.jpg';
-            $is_upload = true;
-            break;
-          case IMAGETYPE_GIF:
-            $new_name .= '.gif';
-            $is_upload = true;
-            break;
-          case IMAGETYPE_PNG:
-            $new_name .= '.png';
-            $is_upload = true;
-            break;
-        }
-        // テンポラリディレクトリ($old_name)から新しい場所へ移動,__DIR__は実行ファイルのディレクトリ出力
-        if ($is_upload && move_uploaded_file($old_name, __DIR__ . './../album/' . $new_name)) {
-          $this->article->setFilename($new_name);
-          $file_name = $this->article->getFilename();
-        }
+      // articleの新規作成
+      if ($file = $this->article->getFile()) { //cf.post.php(l.24-26)
+        // パス指定でファイル移動保存,返却値のファイル名設置
+        $this->article->setFilename($this->saveFile($file['tmp_name']));
+        $file_name = $this->article->getFilename();
 
         $stmt = $this->dbh->prepare("INSERT INTO articles (title, body, filename, created_at, updated_at) VALUES (:title, :body, :filename, NOW(), NOW())");
         $stmt->bindParam(':title', $title, PDO::PARAM_STR);
@@ -79,6 +115,7 @@ class QueryArticle extends connect
       $article->setId($result['id']);
       $article->setTitle($result['title']);
       $article->setBody($result['body']);
+      $article->setFilename($result['filename']);
       $article->setCreatedAt($result['created_at']);
       $article->setUpdatedAt($result['updated_at']);
       $articles[] = $article;
@@ -98,6 +135,7 @@ class QueryArticle extends connect
       $article->setId($result['id']);
       $article->setTitle($result['title']);
       $article->setBody($result['body']);
+      $article->setFilename($result['filename']);
       $article->setCreatedAt($result['created_at']);
       $article->setUpdatedAt($result['updated_at']);
     }
