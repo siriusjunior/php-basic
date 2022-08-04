@@ -86,10 +86,7 @@ class QueryArticle extends connect
       // 差替えファイルのアップロードが確認できる
       if ($file = $this->article->getFile()) { //cf.edit.php(l.40)
         // 既存ファイルの確認,削除
-        if ($this->article->getFilename) {
-          unlink(__DIR__ . '/../album/thumbs-' . $this->article->getFilename());
-          unlink(__DIR__ . '/../album/' . $this->article->getFilename());
-        }
+        $this->deleteFile();
         // 差替えファイルのアップロード
         $this->article->setFilename($this->saveFile($file['tmp_name']));
         $filename = $this->article->getFilename();
@@ -119,9 +116,18 @@ class QueryArticle extends connect
     }
   }
 
+  private function deleteFile()
+  {
+    if ($this->article->getFilename()) {
+      unlink(__DIR__ . '/../album/thumbs-' . $this->article->getFilename());
+      unlink(__DIR__ . '/../album/' . $this->article->getFilename());
+    }
+  }
+
   public function delete()
   {
     if ($this->article->getId()) {
+      $this->deleteFile();
       $id = $this->article->getId();
       $stmt = $this->dbh->prepare("UPDATE articles SET is_delete=1 WHERE id=:id");
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
