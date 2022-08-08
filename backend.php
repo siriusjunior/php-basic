@@ -12,7 +12,7 @@ if (!empty($_GET['page']) && intval($_GET['page']) > 0) {
 }
 
 $queryArticle = new QueryArticle();
-$pager = $queryArticle->getPager($page, $limit);
+$pager = $queryArticle->getPager($page, $limit, $month);
 ?>
 
 <!doctype html>
