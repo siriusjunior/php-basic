@@ -105,14 +105,13 @@ class QueryArticle extends connect
       if ($file = $this->article->getFile()) { //cf.post.php(l.24-26)
         // パス指定でファイル移動保存,返却値のファイル名設置
         $this->article->setFilename($this->saveFile($file['tmp_name']));
-        $file_name = $this->article->getFilename();
-
-        $stmt = $this->dbh->prepare("INSERT INTO articles (title, body, filename, created_at, updated_at) VALUES (:title, :body, :filename, NOW(), NOW())");
-        $stmt->bindParam(':title', $title, PDO::PARAM_STR);
-        $stmt->bindParam(':body', $body, PDO::PARAM_STR);
-        $stmt->bindParam(':filename', $file_name, PDO::PARAM_STR);
-        $stmt->execute();
+        $filename = $this->article->getFilename();
       }
+      $stmt = $this->dbh->prepare("INSERT INTO articles (title, body, filename, created_at, updated_at) VALUES (:title, :body, :filename, NOW(), NOW())");
+      $stmt->bindParam(':filename', $filename, PDO::PARAM_STR);
+      $stmt->bindParam(':title', $title, PDO::PARAM_STR);
+      $stmt->bindParam(':body', $body, PDO::PARAM_STR);
+      $stmt->execute();
     }
   }
 
@@ -135,11 +134,47 @@ class QueryArticle extends connect
     }
   }
 
+  public function find($id)
+  {
+    $stmt = $this->dbh->prepare("SELECT * FROM articles WHERE id=:id AND is_delete=0");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $articles = $this->getArticles($stmt->fetch(PDO::FETCH_ASSOC));
+    return $articles[0];
+  }
+
   public function findAll()
   {
     $stmt = $this->dbh->prepare("SELECT * FROM articles WHERE is_delete=0 ORDER BY created_at DESC");
     $stmt->execute();
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $articles = $this->getArticles($results);
+    return $articles;
+  }
+
+  public function getPager($page = 1, $limit = 10)
+  {
+    $start = ($page - 1) * $limit;
+    $pager = array('total' => null, 'articles' => null);
+
+    // 総記事数の取得
+    $stmt = $this->dbh->prepare("SELECT COUNT(*)FROM articles WHERE is_delete=0");
+    $stmt->execute();
+    $pager['total'] = $stmt->fetchColumn();
+
+    // 記事のインスタンス取得
+    $stmt = $this->dbh->prepare("SELECT * FROM articles WHERE is_delete=0 
+    ORDER BY created_at DESC
+    LIMIT :start, :limit");
+    $stmt->bindParam(':start', $start, PDO::PARAM_INT);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    $pager['articles'] = $this->getArticles($stmt->fetchAll(PDO::FETCH_ASSOC));
+    return $pager;
+  }
+
+  private function getArticles($results)
+  {
     $articles = array();
     foreach ($results as $result) {
       $article = new Article();
@@ -152,24 +187,5 @@ class QueryArticle extends connect
       $articles[] = $article;
     }
     return $articles;
-  }
-
-  public function find($id)
-  {
-    $stmt = $this->dbh->prepare("SELECT * FROM articles WHERE id=:id AND is_delete=0");
-    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-    $stmt->execute();
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $article = null;
-    if ($result) {
-      $article = new Article();
-      $article->setId($result['id']);
-      $article->setTitle($result['title']);
-      $article->setBody($result['body']);
-      $article->setFilename($result['filename']);
-      $article->setCreatedAt($result['created_at']);
-      $article->setUpdatedAt($result['updated_at']);
-    }
-    return $article;
   }
 }
