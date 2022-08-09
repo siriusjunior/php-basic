@@ -12,12 +12,66 @@ class QueryCategory extends connect
   {
     $this->category = $category;
   }
+
+  public function save()
+  {
+    $id = $this->category->getId();
+    $name = $this->category->getName();
+    if ($id) {
+      // IDがあれば上書き
+      $stmt = $this->dbh->prepare("UPDATE categories SET name=:name WHERE id=:id");
+      $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+      $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    } else {
+      // IDがなければ新規作成
+      $stmt = $this->dbh->prepare("INSERT INTO categories(name) VALUES(:name)");
+      $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+    }
+    $stmt->execute();
+  }
+
+  public function find($id)
+  {
+    $stmt = $this->dbh->prepare("SELECT * FROM categories WHERE id=:id");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($result) {
+      $category = new Category();
+      $category->setId($result['id']);
+      $category->setName($result['name']);
+      return $category;
+    }
+    return null;
+  }
+
+  public function findAll()
+  {
+    $stmt = $this->dbh->prepare("SELECT * FROM categories");
+    $stmt->execute();
+    $categories = array();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $result) {
+      $category = new Category();
+      $category->setId($result['id']);
+      $category->setName($result['name']);
+      $categories[$result['id']] = $category;
+    }
+    return $categories;
+  }
 }
+
 
 class Category
 {
   private $id = null;
   private $name = null;
+
+  public function save()
+  {
+    $queryCategory = new QueryCategory();
+    $queryCategory->setCategory($this);
+    $queryCategory->save();
+  }
 
   public function getId()
   {
@@ -29,7 +83,7 @@ class Category
     return $this->name;
   }
 
-  public function setid($id)
+  public function setId($id)
   {
     $this->id = $id;
   }
