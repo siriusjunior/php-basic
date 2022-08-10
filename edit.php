@@ -3,12 +3,19 @@ include 'lib/secure.php';
 include 'lib/connect.php';
 include 'lib/queryArticle.php';
 include 'lib/article.php';
+include 'lib/queryCategory.php';
 
 $title = ""; //タイトル
 $body = ""; //本文
 $id = ""; //id
+$category_id = ""; //カテゴリーID
 $title_alert = ""; //タイトルのエラー文言
 $body_alert = ""; //本文のエラー文言
+
+// カテゴリーの取得
+$queryCategory = new QueryCategory();
+$categories = $queryCategory->findAll();
+
 // 編集データを取得
 if (isset($_GET['id'])) {
   $queryArticle = new QueryArticle();
@@ -19,25 +26,36 @@ if (isset($_GET['id'])) {
     $id = $article->getId();
     $title = $article->getTitle();
     $body = $article->getBody();
+    $category_id = $article->getCategoryId();
   } else {
     // 記事データがない
     header('Location:backend.php');
     exit;
   }
-  // 編集データを送信
+  // 編集データを送信,各々のバリデーションを満たす
 } else if (!empty($_POST['id']) && !empty($_POST['title']) && !empty($_POST['body'])) {
   $title = $_POST['title'];
   $body = $_POST['body'];
 
   $queryArticle = new QueryArticle();
   $article = $queryArticle->find($_POST['id']);
+
   if ($article) {
-    // 記事データを上書き保存
+    // 既存のarticleが存在,上書き保存
     $article->setTitle($title);
     $article->setBody($body);
     // 画像がアップロードされていたとき
     if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
       $article->setFile($_FILES['image']);
+    }
+    // カテゴリーが選択されているとき
+    if (!empty($_POST['category'])) {
+      $category = $queryCategory->find($_POST['category']);
+      if ($category) {
+        $article->setCategoryId($category->getId());
+      }
+    } else {
+      $article->setCategoryId(null);
     }
     $article->save();
   }
@@ -122,7 +140,15 @@ if (isset($_GET['id'])) {
             <?php echo !empty($body_alert) ? '<div class="alert alert-danger">' . $body_alert . '</div>' : ''; ?>
             <textarea name="body" class="form-control" rows="10"><?php echo $body; ?></textarea>
           </div>
-
+          <div class="mb-3">
+            <label class="form-label">カテゴリー</label>
+            <select name="category" class="form-control">
+              <option value="0">なし</option>
+              <?php foreach ($categories as $c) : ?>
+                <option value="<?php echo $c->getId() ?>" <?php echo $category_id == $c->getId() ? 'selected="selected"' : '' ?>><?php echo $c->getName() ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
           <?php if ($article->getFilename()) : ?>
             <div class="mb-3">
               <img src="./album/tumbs-<?php echo $article->getFilename() ?>">

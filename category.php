@@ -20,6 +20,12 @@ if (!empty($_POST['action']) && $_POST['action'] == 'add' && !empty($_POST['name
     $category->setName($_POST['name']);
     $category->save();
   }
+} else if (!empty($_GET['action']) && $_GET['action'] == 'delete' && !empty($_GET['id'])) {
+  // カテゴリーの削除
+  $category = $queryCategory->find($_GET['id']);
+  if ($category) {
+    $category->delete();
+  }
 }
 
 $categories =  $queryCategory->findAll();
@@ -107,6 +113,7 @@ $categories =  $queryCategory->findAll();
                   <td><?php echo $c->getId(); ?></td>
                   <td><?php echo $c->getName(); ?></td>
                   <td><a href="category.php?action=edit&id=<?php echo $c->getId(); ?>" class="btn btn-success">編集</a></td>
+                  <td><a href="category.php?action=delete&id=<?php echo $c->getId(); ?>" class="btn btn-danger">削除</a></td>
                 </tr>
               <?php endforeach ?>
             </tbody>

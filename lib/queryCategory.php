@@ -17,7 +17,7 @@ class QueryCategory extends connect
   {
     $id = $this->category->getId();
     $name = $this->category->getName();
-    if ($id) {
+    if ($this->category->getId()) {
       // IDがあれば上書き
       $stmt = $this->dbh->prepare("UPDATE categories SET name=:name WHERE id=:id");
       $stmt->bindParam(':name', $name, PDO::PARAM_STR);
@@ -27,6 +27,17 @@ class QueryCategory extends connect
       $stmt = $this->dbh->prepare("INSERT INTO categories(name) VALUES(:name)");
       $stmt->bindParam(':name', $name, PDO::PARAM_STR);
     }
+    $stmt->execute();
+  }
+
+  public function delete()
+  {
+    $id = $this->category->getId();
+    $stmt = $this->dbh->prepare("UPDATE articles SET category_id = NULL WHERE category_id=:id");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $stmt = $this->dbh->prepare("DELETE FROM categories WHERE id=:id");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
   }
 
@@ -71,6 +82,13 @@ class Category
     $queryCategory = new QueryCategory();
     $queryCategory->setCategory($this);
     $queryCategory->save();
+  }
+
+  public function delete()
+  {
+    $queryCategory = new QueryCategory();
+    $queryCategory->setCategory($this);
+    $queryCategory->delete();
   }
 
   public function getId()
