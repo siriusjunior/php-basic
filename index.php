@@ -14,6 +14,7 @@ $limit = 5;
 $page = 1;
 $month = null;
 $title = "";
+$category_id = null;
 
 // ページ数の定義
 if (!empty($_GET['page']) && intval($_GET['page']) > 0) {
@@ -24,8 +25,20 @@ if (!empty($_GET['month'])) {
   $month = $_GET['month'];
   $title = $month . 'の投稿一覧';
 }
+// カテゴリー指定
+if (isset($_GET['category'])) {
+  // 該当するカテゴリー配列がある
+  if (isset($category[$_GET['category']])) {
+    $title = 'カテゴリー:' . $category[$_GET['category']]['name'];
+    // 同じページのカテゴリーアーカイブの値より
+    $category_id = intval($_GET['category']);
+  } else {
+    $title = 'カテゴリーなし';
+    $category_id = 0;
+  }
+}
 
-$pager = $queryArticle->getPager($page, $limit, $month);
+$pager = $queryArticle->getPager($page, $limit, $month, $category_id);
 ?>
 
 <!doctype html>
@@ -97,8 +110,8 @@ $pager = $queryArticle->getPager($page, $limit, $month);
             <ul class="pagination">
               <?php for ($i = 1; $i <= ceil($pager['total'] / $limit); $i++) : ?>
                 <li class="page-item">
-                  <!-- アーカイブリンクより月指定があればそのまま引き継ぐ -->
-                  <a class="page-link" href="index.php?page=<?php echo $i ?><?php echo $month ? '&month=' . $month : '' ?>">
+                  <!-- アーカイブリンクより月,またはカテゴリーがあればそのまま引き継ぐ -->
+                  <a class="page-link" href="index.php?page=<?php echo $i ?><?php echo $month ? '&month=' . $month : '' ?><?php echo !is_null($category_id) ? '&category_id' . $category_id : '' ?>">
                     <?php echo $i ?>
                   </a>
                 </li>

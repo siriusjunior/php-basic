@@ -76,7 +76,7 @@ class QueryCategory extends connect
       FROM articles AS a
       LEFT JOIN categories AS c ON a.category_id = c.id
       WHERE a.is_delete=0
-      GROUP BY a.cateogry_id
+      GROUP BY a.category_id
       ORDER BY c.id");
     $stmt->execute();
     $return = array();
