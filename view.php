@@ -2,14 +2,20 @@
 include 'lib/connect.php';
 include 'lib/queryArticle.php';
 include 'lib/article.php';
+include 'lib/queryCategory.php';
+
+$queryArticle = new QueryArticle();
+$queryCategory = new QueryCategory();
+
+$monthly = $queryArticle->getMonthlyArchiveMenu();
+$category = $queryCategory->getCategoryMenu();
+
 if (!empty($_GET['id'])) {
   $id = intval($_GET['id']);
-  $queryArticle = new QueryArticle();
   $article = $queryArticle->find($id);
 } else {
   $article = null;
 }
-$monthly = $queryArticle->getMonthlyArchiveMenu();
 ?>
 
 
@@ -85,6 +91,14 @@ $monthly = $queryArticle->getMonthlyArchiveMenu();
           <ol class="list-unstyled mb-0">
             <?php foreach ($monthly as $m) : ?>
               <li><a href="index.php?month=<?php echo $m['month'] ?>"><?php echo $m['month'] ?>(<?php echo $m['count'] ?>)</a></li>
+            <?php endforeach ?>
+          </ol>
+        </div>
+        <div class="p-4">
+          <h4>カテゴリー別アーカイブ</h4>
+          <ol class="list-unstyled mb-0">
+            <?php foreach ($category as $c) : ?>
+              <li><a href="index.php?category=<?php echo $c['id'] ? $c['id'] : 0 ?>"><?php echo $c['name'] ? $c['name'] : 'カテゴリーなし' ?></a></li>
             <?php endforeach ?>
           </ol>
         </div>

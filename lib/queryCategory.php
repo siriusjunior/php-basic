@@ -69,6 +69,22 @@ class QueryCategory extends connect
     }
     return $categories;
   }
+
+  public function getCategoryMenu()
+  {
+    $stmt = $this->dbh->prepare("SELECT c.name AS name, c.id AS id,count(*) AS count
+      FROM articles AS a
+      LEFT JOIN categories AS c ON a.category_id = c.id
+      WHERE a.is_delete=0
+      GROUP BY a.cateogry_id
+      ORDER BY c.id");
+    $stmt->execute();
+    $return = array();
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+      $return[$row['id']] = array('name' => $row['name'], 'id' => $row['id'], 'count' => $row['count']);
+    }
+    return $return;
+  }
 }
 
 
